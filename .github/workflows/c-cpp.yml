@@ -1,0 +1,29 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Restore NuGet Packages
+      run: nuget restore SaladDashboard.sln
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Build Solution
+      run: msbuild SaladDashboard.sln /p:Configuration=Release /p:Platform=x64 /m
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SaladDashboard-Release
+        path: x64/Release/SaladDashboard.exe
