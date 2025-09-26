@@ -1,0 +1,578 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salad API Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+
+        #header {
+            display: flex;
+            align-items: center;
+            height: 50px;
+            padding: 6px;
+        }
+
+            #header h1 {
+                font-size: 18px;
+                font-weight: bold;
+                margin: 0;
+            }
+
+        #refresh-btn {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 6px 12px;
+            cursor: pointer;
+            margin-left: auto;
+        }
+
+            #refresh-btn:hover {
+                background-color: #3d3d3d;
+            }
+
+        #container {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+
+        #left-panel {
+            width: 40%;
+            padding: 6px;
+        }
+
+        #right-panel {
+            width: 60%;
+            padding: 6px;
+        }
+
+        .group-box {
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+            .group-box h2 {
+                font-size: 14px;
+                font-weight: bold;
+                margin-top: 0;
+            }
+
+        .tab-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .tab-buttons {
+            display: flex;
+        }
+
+        .tab-button {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #404040;
+            border-radius: 8px 8px 0 0;
+            padding: 6px 12px;
+            cursor: pointer;
+            margin-right: 2px;
+        }
+
+            .tab-button.active {
+                background-color: #404040;
+            }
+
+        .tab-content {
+            border: 1px solid #404040;
+            border-radius: 0 8px 8px 8px;
+            padding: 6px;
+            flex-grow: 1;
+            overflow: auto;
+        }
+
+        .sub-tab-buttons {
+            display: flex;
+        }
+
+        .sub-tab-button {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #404040;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+
+            .sub-tab-button.active {
+                background-color: #404040;
+            }
+
+        .sub-tab-content {
+            padding: 6px;
+        }
+
+        canvas {
+            background-color: #2d2d2d;
+        }
+
+        .machine-item {
+            background-color: #2d2d2d;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 6px;
+        }
+
+        .machine-header {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .details-btn {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+
+        .details-content {
+            display: none;
+            padding-left: 20px;
+        }
+
+        .reward-card {
+            background-color: #2d2d2d;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            margin: 4px;
+            padding: 10px;
+            display: flex;
+            cursor: pointer;
+        }
+
+            .reward-card:hover {
+                border: 1px solid #4CAF50;
+            }
+
+        .reward-image {
+            width: 220px;
+            height: 300px;
+            border-radius: 8px;
+            margin-right: 8px;
+            object-fit: cover;
+        }
+
+        .reward-text {
+            flex-grow: 1;
+        }
+
+        .demand-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .demand-table th, .demand-table td {
+                border: 1px solid #404040;
+                padding: 8px;
+                text-align: left;
+            }
+
+            .demand-table th {
+                background-color: #1a1a1a;
+            }
+
+        .high {
+            background-color: #4caf50;
+        }
+
+        .medium {
+            background-color: #ff9800;
+        }
+
+        .low {
+            background-color: #f44336;
+        }
+
+        input[type="text"] {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            padding: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Salad API Dashboard</h1>
+        <button id="refresh-btn">Refresh Data</button>
+    </div>
+    <div id="container">
+        <div id="left-panel">
+            <div class="group-box" id="account-details">
+                <h2>Account Details</h2>
+                <p id="email">Email: Loading...</p>
+                <p id="username">Username: Loading...</p>
+                <p id="balance">Current Balance: Loading...</p>
+                <p id="lifetime">Lifetime Balance: Loading...</p>
+                <p id="auth-status">Status: Checking...</p>
+            </div>
+            <div class="group-box" id="machines">
+                <h2>Machines</h2>
+                <div id="machines-list"></div>
+            </div>
+        </div>
+        <div id="right-panel">
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="earnings">Earnings</button>
+                    <button class="tab-button" data-tab="storefront">Storefront</button>
+                    <button class="tab-button" data-tab="demand">Demand Monitor</button>
+                </div>
+                <div class="tab-content" id="earnings-tab" style="display: block;">
+                    <div class="sub-tab-buttons">
+                        <button class="sub-tab-button active" data-subtab="24h">24 Hours</button>
+                        <button class="sub-tab-button" data-subtab="7d">7 Days</button>
+                        <button class="sub-tab-button" data-subtab="30d">30 Days</button>
+                    </div>
+                    <div class="sub-tab-content" id="earnings-24h" style="display: block;">
+                        <canvas id="chart-24h"></canvas>
+                        <p id="total-24h">Total (24h): $0.00</p>
+                        <p id="avg-24h">Average (hourly): $0.00</p>
+                    </div>
+                    <div class="sub-tab-content" id="earnings-7d" style="display: none;">
+                        <canvas id="chart-7d"></canvas>
+                        <p id="total-7d">Total (7d): $0.00</p>
+                        <p id="avg-7d">Average (daily): $0.00</p>
+                    </div>
+                    <div class="sub-tab-content" id="earnings-30d" style="display: none;">
+                        <canvas id="chart-30d"></canvas>
+                        <p id="total-30d">Total (30d): $0.00</p>
+                        <p id="avg-30d">Average (daily): $0.00</p>
+                    </div>
+                </div>
+                <div class="tab-content" id="storefront-tab" style="display: none;">
+                    <div>
+                        <label for="storefront-search">Search:</label>
+                        <input type="text" id="storefront-search" placeholder="Search storefront items...">
+                    </div>
+                    <button id="load-storefront">Load Storefront Data</button>
+                    <div id="storefront-content"></div>
+                </div>
+                <div class="tab-content" id="demand-tab" style="display: none;">
+                    <button id="load-demand">Load Demand Data</button>
+                    <div id="demand-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let earningHistory = [];
+        let charts = {};
+        let machinesData = {};
+
+        window.chrome.webview.addEventListener('message', (event) => {
+        const data = event.data;
+        const action = data.action;
+        if (data.error) {
+        console.error(`Error from native for ${action}:`, data.error);
+        alert(`Error: ${data.error}`);
+        return;
+        }
+        if (action === 'refresh') {
+        updateAccountDetails(data.profile, data.balance);
+        earningHistory = Object.entries(data.earning_history || {}).map(([timestamp, amount]) => ({timestamp, amount}));
+        updateAllEarningsCharts();
+        let machinesList = data.machines || [];
+        if (data.machines.items) machinesList = data.machines.items;
+        updateMachines(machinesList);
+        } else if (action === 'get_demand_monitor') {
+        updateDemandTable(data.data);
+        } else if (action === 'get_storefront') {
+        updateStorefront(data.data);
+        } else if (action === 'get_machine_details') {
+        updateMachineDetails(data);
+        }
+        });
+
+        document.getElementById('refresh-btn').addEventListener('click', () => {
+        window.chrome.webview.postMessage({action: 'refresh'});
+        });
+
+        document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+        document.getElementById(`${btn.dataset.tab}-tab`).style.display = 'block';
+        });
+        });
+
+        document.querySelectorAll('.sub-tab-button').forEach(btn => {
+        btn.addEventListener('click', () => {
+        document.querySelectorAll('.sub-tab-button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.sub-tab-content').forEach(sub => sub.style.display = 'none');
+        document.getElementById(`earnings-${btn.dataset.subtab}`).style.display = 'block';
+        });
+        });
+
+        document.getElementById('load-storefront').addEventListener('click', () => {
+        window.chrome.webview.postMessage({action: 'get_storefront'});
+        });
+
+        document.getElementById('storefront-search').addEventListener('input', (e) => {
+        const search = e.target.value.toLowerCase();
+        document.querySelectorAll('.reward-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = search === '' || text.includes(search) ? 'flex' : 'none';
+        });
+        });
+
+        document.getElementById('load-demand').addEventListener('click', () => {
+        window.chrome.webview.postMessage({action: 'get_demand_monitor'});
+        });
+
+        function updateAccountDetails(profile, balance) {
+        document.getElementById('email').textContent = `Email: ${profile?.email || 'N/A'}`;
+        document.getElementById('username').textContent = `Username: ${profile?.username || 'N/A'}`;
+        document.getElementById('balance').textContent = `Current Balance: $${(balance?.currentBalance || 0).toFixed(4)}`;
+        document.getElementById('lifetime').textContent = `Lifetime Balance: $${(balance?.lifetimeBalance || 0).toFixed(4)}`;
+        document.getElementById('auth-status').textContent = `Status: ${balance ? 'Authenticated' : 'No Token Found'}`;
+        }
+
+        function updateMachines(machines) {
+        const list = document.getElementById('machines-list');
+        list.innerHTML = '';
+        machines.sort((a, b) => new Date(b.update_time) - new Date(a.update_time));
+        machines.forEach(machine => {
+        const mid = machine.machine_id;
+        const lifetime = machine.lifetime_balance.toFixed(4);
+        const updateTime = machine.update_time ? timeAgo(new Date(machine.update_time)) : 'Unknown';
+        const earnings5min = machine.earnings_5min?.total || 0;
+        const item = document.createElement('div');
+        item.className = 'machine-item';
+        item.innerHTML = `
+        <div class="machine-header">
+        <span>${mid.slice(0,12)}...</span>
+        <span>${updateTime}</span>
+        <span>$${lifetime}</span>
+        <span>$${earnings5min.toFixed(7)}</span>
+        <button class="details-btn" data-mid="${mid}">Details</button>
+        </div>
+        <div class="details-content" id="details-${mid}"></div>
+        `;
+        list.appendChild(item);
+        item.querySelector('.details-btn').addEventListener('click', (e) => {
+        const details = document.getElementById(`details-${mid}`);
+        if (details.style.display === 'block') {
+        details.style.display = 'none';
+        e.target.textContent = 'Details';
+        } else {
+        details.style.display = 'block';
+        e.target.textContent = 'Hide';
+        if (!machinesData[mid]) {
+        window.chrome.webview.postMessage({action: 'get_machine_details', machine_id: mid});
+        } else {
+        displayMachineDetails(mid, machinesData[mid]);
+        }
+        }
+        });
+        });
+        }
+
+        function updateMachineDetails(data) {
+        const mid = data.earnings_30d?.machine_id || '';  // Assume included, or from request
+        if (mid) {
+        machinesData[mid] = data;
+        displayMachineDetails(mid, data);
+        }
+        }
+
+        function displayMachineDetails(mid, data) {
+        const details = document.getElementById(`details-${mid}`);
+        const earnings5min = data.earnings_5min?.total || 0;
+        const earnings30d = data.earnings_30d?.earnings || {};
+        let total24h = 0, total7d = 0, total30d = 0;
+        const now = new Date();
+        Object.entries(earnings30d).forEach(([ts, amt]) => {
+        const dt = new Date(ts);
+        const hoursDiff = (now - dt) / 3600000;
+        if (hoursDiff <= 24) total24h += amt;
+        if (hoursDiff <= 168) total7d += amt;
+        total30d += amt;
+        });
+        details.innerHTML = `
+        5-Minute Earnings: $${earnings5min.toFixed(7)}<br>
+        24h Total: $${total24h.toFixed(4)}<br>
+        7d Total: $${total7d.toFixed(4)}<br>
+        30d Total: $${total30d.toFixed(4)}
+        `;
+        }
+
+        function timeAgo(date) {
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+        let interval = Math.floor(seconds / 31536000);
+        if (interval > 1) return `${interval} years ago`;
+        interval = Math.floor(seconds / 2592000);
+        if (interval > 1) return `${interval} months ago`;
+        interval = Math.floor(seconds / 86400);
+        if (interval > 1) return `${interval} days ago`;
+        interval = Math.floor(seconds / 3600);
+        if (interval > 1) return `${interval} hours ago`;
+        interval = Math.floor(seconds / 60);
+        if (interval > 1) return `${interval} minutes ago`;
+        return `${seconds} seconds ago`;
+        }
+
+        function updateAllEarningsCharts() {
+        updateEarningsChart('24h', 24);
+        updateEarningsChart('7d', 168);
+        updateEarningsChart('30d', 720);
+        }
+
+        function updateEarningsChart(timeframe, hours) {
+        const now = new Date();
+        const data = earningHistory.filter(item => (now - new Date(item.timestamp) ) / 3600000 <= hours);
+        const aggregated = aggregateEarnings(data, timeframe);
+        const labels = aggregated.map(item => new Date(item.time).toLocaleString());
+        const values = aggregated.map(item => item.amount);
+        const total = values.reduce((sum, v) => sum + v, 0);
+        let avg = 0;
+        if (timeframe === '24h') avg = total / 24;
+        else if (timeframe === '7d') avg = total / 7;
+        else if (timeframe === '30d') avg = total / 30;
+        document.getElementById(`total-${timeframe}`).textContent = `Total (${timeframe}): $${total.toFixed(4)}`;
+        document.getElementById(`avg-${timeframe}`).textContent = `Average (${timeframe === '24h' ? 'hourly' : 'daily'}): $${avg.toFixed(6)}`;
+
+        const ctx = document.getElementById(`chart-${timeframe}`).getContext('2d');
+        if (charts[timeframe]) charts[timeframe].destroy();
+        charts[timeframe] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+        labels: labels,
+        datasets: [{ label: 'Earnings ($)', data: values, backgroundColor: '#4CAF50' }]
+        },
+        options: {
+        scales: {
+        x: { ticks: { color: '#ffffff' } },
+        y: { ticks: { color: '#ffffff' } }
+        },
+        plugins: { legend: { labels: { color: '#ffffff' } } }
+        }
+        });
+        }
+
+        function aggregateEarnings(data, timeframe) {
+        data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const aggregated = [];
+        let intervalMs;
+        if (timeframe === '24h') intervalMs = 15 * 60 * 1000; // 15 min
+        else if (timeframe === '7d') intervalMs = 60 * 60 * 1000; // 1 hour
+        else intervalMs = 24 * 60 * 60 * 1000; // 1 day
+        let currentInterval = null;
+        let currentAmount = 0;
+        data.forEach(item => {
+        const time = new Date(item.timestamp);
+        const intervalStart = new Date(Math.floor(time.getTime() / intervalMs) * intervalMs);
+        if (currentInterval && intervalStart.getTime() === currentInterval.getTime()) {
+        currentAmount += item.amount;
+        } else {
+        if (currentInterval) aggregated.push({time: currentInterval, amount: currentAmount});
+        currentInterval = intervalStart;
+        currentAmount = item.amount;
+        }
+        });
+        if (currentInterval) aggregated.push({time: currentInterval, amount: currentAmount});
+        return aggregated;
+        }
+
+        function updateStorefront(data) {
+        const content = document.getElementById('storefront-content');
+        content.innerHTML = '';
+        if (data.blocks) {
+        const processedUuids = new Set();
+        data.blocks.forEach(block => {
+        if (block.__component === 'storefront.reward-list-block') {
+        const title = document.createElement('h3');
+        title.textContent = block.title;
+        content.appendChild(title);
+        block.rewards.forEach(reward => {
+        if (!processedUuids.has(reward.uuid)) {
+        processedUuids.add(reward.uuid);
+        content.appendChild(createRewardCard(reward));
+        }
+        });
+        }
+        });
+        }
+        }
+
+        function createRewardCard(reward) {
+        const card = document.createElement('div');
+        card.className = 'reward-card';
+        card.innerHTML = `
+        <img src="${reward.coverImage}" class="reward-image" loading="lazy" alt="${reward.name}">
+        <div class="reward-text">
+        <h3>${reward.name}</h3>
+        <p>$${reward.price.toFixed(2)}${reward.originalPrice && reward.originalPrice !== reward.price ? ` (was $${reward.originalPrice.toFixed(2)})` : ''}</p>
+        <p style="color: ${reward.inStock ? '#4CAF50' : '#f44336'};">${reward.inStock ? 'In Stock' : 'Out of Stock'}</p>
+        </div>
+        `;
+        card.addEventListener('click', () => {
+        window.chrome.webview.postMessage({action: 'open_url', url: `https://salad.com/store/rewards/${reward.uuid}`});
+        });
+        return card;
+        }
+
+        function updateDemandTable(data) {
+        const content = document.getElementById('demand-content');
+        content.innerHTML = '';
+        const table = document.createElement('table');
+        table.className = 'demand-table';
+        table.innerHTML = `
+        <thead>
+        <tr>
+        <th>GPU Model</th>
+        <th>Demand Tier</th>
+        <th>Avg Rate ($)</th>
+        <th>Utilization %</th>
+        <th>Top 25% Rate ($)</th>
+        </tr>
+        </thead>
+        <tbody>
+        `;
+        data.forEach(gpu => {
+        const tier = gpu.demandTier;
+        table.innerHTML += `
+        <tr>
+        <td>${gpu.displayName}</td>
+        <td class="${tier}">${gpu.demandTierName || tier.charAt(0).toUpperCase() + tier.slice(1)}</td>
+        <td>$${gpu.earningRates.avgEarningRate.toFixed(6)}</td>
+        <td>${gpu.utilizationPct}%</td>
+        <td>$${gpu.earningRates.top25PctEarningRate.toFixed(6)}</td>
+        </tr>
+        `;
+        });
+        table.innerHTML += '</tbody>';
+        content.appendChild(table);
+        }
+
+        // Initial load
+        window.chrome.webview.postMessage({action: 'refresh'});
+    </script>
+</body>
+</html>
