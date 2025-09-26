@@ -13,6 +13,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set C++ Standard
+      shell: pwsh
+      run: |
+        $vcxprojPath = "SaladDashboard/SaladDashboard.vcxproj"
+        $content = Get-Content $vcxprojPath -Raw
+        $content = $content -replace '<LanguageStandard>.*?</LanguageStandard>', '<LanguageStandard>stdcpp20</LanguageStandard>'
+        Set-Content $vcxprojPath $content
+
     - name: Restore NuGet Packages
       run: nuget restore SaladDashboard.sln
 
@@ -26,4 +34,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SaladDashboard-Release
-        path: x64/Release/SaladDashboard.exe
+        path: SaladDashboard/x64/Release/SaladDashboard.exe
