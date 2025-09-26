@@ -13,32 +13,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup C++ Standard in vcxproj
-      shell: pwsh
-      run: |
-        $vcxprojPath = "SaladDashboard/SaladDashboard.vcxproj"
-        $xml = [xml](Get-Content $vcxprojPath)
-        $itemGroups = $xml.Project.ItemDefinitionGroup
-        if ($itemGroups -isnot [array]) {
-          $itemGroups = @($itemGroups)
-        }
-        foreach ($group in $itemGroups) {
-          if ($group.Condition -match "Release|x64") {
-            $clCompile = $group.ClCompile
-            if ($clCompile -eq $null) {
-              $clCompile = $xml.CreateElement("ClCompile")
-              $group.AppendChild($clCompile) | Out-Null
-            }
-            $langStandard = $clCompile.LanguageStandard
-            if ($langStandard -eq $null) {
-              $langStandard = $xml.CreateElement("LanguageStandard")
-              $clCompile.AppendChild($langStandard) | Out-Null
-            }
-            $langStandard.InnerText = "stdcpp20"
-          }
-        }
-        $xml.Save($vcxprojPath)
-
     - name: Restore NuGet Packages
       run: nuget restore SaladDashboard.sln
 
